@@ -79,7 +79,8 @@
     font-size:11px; color:var(--text-faint); margin-top:6px; line-height:1.5;
   }
 
-  .search-wrap{ position:relative; }
+  .search-row{ display:flex; gap:8px; align-items:center; }
+  .search-wrap{ position:relative; flex:1; min-width:0; }
   .search-wrap input{
     width:100%; background:var(--panel-2); border:1px solid var(--line);
     color:var(--text); border-radius:8px; padding:10px 12px 10px 32px;
@@ -88,6 +89,15 @@
   }
   .search-wrap input:focus{ border-color: var(--accent-dim); }
   .search-wrap svg{ position:absolute; left:10px; top:50%; transform:translateY(-50%); opacity:0.45; }
+
+  .star-filter-btn{
+    flex-shrink:0; width:36px; height:36px; border-radius:8px;
+    background: var(--panel-2); border:1px solid var(--line); color: var(--text-faint);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+    transition: all .12s;
+  }
+  .star-filter-btn:hover{ border-color: var(--text-faint); color: var(--text); }
+  .star-filter-btn.active{ background: var(--amber); border-color:transparent; color:#0d1013; }
 
   .filter-label{
     font-size:10px; text-transform:uppercase; letter-spacing:0.12em;
@@ -288,8 +298,23 @@
   .pos-badge.K{ background: var(--k); }
 
   .player-info{ flex:1; min-width:0; }
+  .player-name-row{ display:flex; align-items:center; gap:6px; min-width:0; }
   .player-name{ font-size:14.5px; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
   .player-meta{ font-size:11.5px; color:var(--text-faint); margin-top:1px; }
+
+  .star-btn{
+    flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    width:20px; height:20px; padding:0; border:none; background:transparent;
+    color: var(--text-faint); cursor:pointer; transition: color .12s, transform .12s;
+  }
+  .star-btn:hover{ color: var(--amber); transform: scale(1.12); }
+  .star-btn.starred{ color: var(--amber); }
+
+  .player-row.targeted-row{
+    border-color: rgba(227,165,61,0.45);
+    background: linear-gradient(90deg, rgba(227,165,61,0.10), transparent 60%);
+  }
+  .player-row.targeted-row:hover{ border-color: rgba(227,165,61,0.65); }
 
   .meta-col{ font-size:12.5px; color:var(--text-dim); width:52px; text-align:right; flex-shrink:0; font-variant-numeric: tabular-nums; }
 
@@ -331,9 +356,14 @@
     </div>
     <div class="sub">Drag any player to build your own big board, check them off as they're taken in your draft. Starts from the consensus of ESPN, Yahoo &amp; FantasyPros — everything saves automatically on this device.</div>
 
-    <div class="search-wrap">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-      <input id="search" type="text" placeholder="Search player or team…" autocomplete="off">
+    <div class="search-row">
+      <div class="search-wrap">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input id="search" type="text" placeholder="Search player or team…" autocomplete="off">
+      </div>
+      <button class="star-filter-btn" id="starOnlyBtn" title="Show only my targets">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><polygon points="12 2 15.09 8.63 22 9.27 16.5 14.14 18.18 21 12 17.27 5.82 21 7.5 14.14 2 9.27 8.91 8.63 12 2"></polygon></svg>
+      </button>
     </div>
 
     <div>
@@ -343,6 +373,7 @@
 
     <div class="stat-block">
       <div class="stat-row"><span class="k">Players ranked</span><span class="v" id="statTotal">300</span></div>
+      <div class="stat-row"><span class="k">Targeted</span><span class="v" id="statTargeted">0</span></div>
       <div class="stat-row"><span class="k">Available</span><span class="v" id="statAvailable">300</span></div>
       <div class="stat-row"><span class="k">Drafted</span><span class="v" id="statDrafted">0</span></div>
       <div class="stat-row"><span class="k">Showing</span><span class="v" id="statShowing">300</span></div>
@@ -377,6 +408,10 @@
       <button class="btn ghost" id="clearDraftedBtn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path></svg>
         Clear drafted picks
+      </button>
+      <button class="btn ghost" id="clearTargetedBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><polygon points="12 2 15.09 8.63 22 9.27 16.5 14.14 18.18 21 12 17.27 5.82 21 7.5 14.14 2 9.27 8.91 8.63 12 2"></polygon></svg>
+        Clear all targets
       </button>
       <button class="btn ghost" id="resetBtn">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
@@ -429,7 +464,9 @@ DATA.forEach(p => byId[p.id] = p);
 
 let order = DATA.map(p => p.id); // custom rank order (all 300 ids)
 let drafted = new Set();          // ids marked as taken
+let targeted = new Set();         // ids starred as "targets"
 let filterPos = 'ALL';
+let starOnly = false;
 let searchQuery = '';
 let sortableInstance = null;
 let saveTimer = null;
@@ -467,6 +504,7 @@ function getVisibleIds(){
   const q = searchQuery.trim().toLowerCase();
   return availableOrder().filter(id => {
     const p = byId[id];
+    if(starOnly && !targeted.has(id)) return false;
     if(filterPos !== 'ALL' && p.pos !== filterPos) return false;
     if(q && !p.name.toLowerCase().includes(q) && !p.team.toLowerCase().includes(q)) return false;
     return true;
@@ -487,9 +525,19 @@ function checkboxEl(id, checked){
   return label;
 }
 
+function starEl(id, isStarred){
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'star-btn' + (isStarred ? ' starred' : '');
+  btn.dataset.starId = id;
+  btn.title = isStarred ? 'Remove from targets' : 'Mark as a target';
+  btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="${isStarred ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><polygon points="12 2 15.09 8.63 22 9.27 16.5 14.14 18.18 21 12 17.27 5.82 21 7.5 14.14 2 9.27 8.91 8.63 12 2"></polygon></svg>`;
+  return btn;
+}
+
 function rowEl(p, customRank, delta, id){
   const el = document.createElement('div');
-  el.className = 'player-row';
+  el.className = 'player-row' + (targeted.has(id) ? ' targeted-row' : '');
   el.dataset.id = id;
   const d = fmtDelta(delta);
 
@@ -503,10 +551,18 @@ function rowEl(p, customRank, delta, id){
 
   const info = document.createElement('span');
   info.className = 'player-info';
-  info.innerHTML = `
-    <div class="player-name">${p.name}</div>
-    <div class="player-meta">${p.team} &nbsp;·&nbsp; Bye ${p.bye} &nbsp;·&nbsp; Consensus #${p.rank}${p.price ? ' &nbsp;·&nbsp; $' + p.price : ''}</div>
-  `;
+  const nameRow = document.createElement('div');
+  nameRow.className = 'player-name-row';
+  nameRow.appendChild(starEl(id, targeted.has(id)));
+  const nameLine = document.createElement('span');
+  nameLine.className = 'player-name';
+  nameLine.textContent = p.name;
+  nameRow.appendChild(nameLine);
+  const metaLine = document.createElement('div');
+  metaLine.className = 'player-meta';
+  metaLine.innerHTML = `${p.team} &nbsp;·&nbsp; Bye ${p.bye} &nbsp;·&nbsp; Consensus #${p.rank}${p.price ? ' &nbsp;·&nbsp; $' + p.price : ''}`;
+  info.appendChild(nameRow);
+  info.appendChild(metaLine);
 
   const byeCol = document.createElement('span');
   byeCol.className = 'meta-col';
@@ -574,7 +630,7 @@ function roundDividerEl(roundNum, poolLabel){
 function render(){
   const list = document.getElementById('list');
   const visibleIds = getVisibleIds();
-  const noFilterActive = (filterPos === 'ALL' && searchQuery.trim() === '');
+  const noFilterActive = (filterPos === 'ALL' && searchQuery.trim() === '' && !starOnly);
   const avail = availableOrder();
 
   list.innerHTML = '';
@@ -582,9 +638,15 @@ function render(){
   if(visibleIds.length === 0){
     const empty = document.createElement('div');
     empty.className = 'empty-state';
-    empty.innerHTML = avail.length === 0
-      ? `<div class="big">Board's empty</div>Every ranked player has been marked drafted.`
-      : `<div class="big">No players found</div>Try a different search or position filter.`;
+    if(starOnly && targeted.size === 0){
+      empty.innerHTML = `<div class="big">No targets yet</div>Tap the ☆ next to a player's name to star them as a target.`;
+    } else if(starOnly){
+      empty.innerHTML = `<div class="big">No targets left</div>Every player you starred has been drafted, or is hidden by another filter.`;
+    } else {
+      empty.innerHTML = avail.length === 0
+        ? `<div class="big">Board's empty</div>Every ranked player has been marked drafted.`
+        : `<div class="big">No players found</div>Try a different search or position filter.`;
+    }
     list.appendChild(empty);
   } else {
     visibleIds.forEach(id => {
@@ -601,6 +663,7 @@ function render(){
   document.getElementById('statShowing').textContent = visibleIds.length;
   document.getElementById('statAvailable').textContent = avail.length;
   document.getElementById('statDrafted').textContent = drafted.size;
+  document.getElementById('statTargeted').textContent = targeted.size;
   const movedCount = order.filter(id => byId[id].rank !== (order.indexOf(id) + 1)).length;
   document.getElementById('statMoved').textContent = movedCount;
 
@@ -629,6 +692,12 @@ function renderDraftedSection(){
 
 function toggleDrafted(id){
   if(drafted.has(id)) drafted.delete(id); else drafted.add(id);
+  scheduleSave();
+  render();
+}
+
+function toggleTargeted(id){
+  if(targeted.has(id)) targeted.delete(id); else targeted.add(id);
   scheduleSave();
   render();
 }
@@ -662,7 +731,7 @@ function handleReorder(){
 // storage just works) ----------
 
 function serializeState(){
-  return JSON.stringify({ order, drafted: Array.from(drafted) });
+  return JSON.stringify({ order, drafted: Array.from(drafted), targeted: Array.from(targeted) });
 }
 
 function setSaveIndicator(text, dim){
@@ -703,12 +772,14 @@ function loadState(){
     if(saved && Array.isArray(saved.order) && saved.order.length === DATA.length && saved.order.every(id => byId[id])){
       order = saved.order;
       drafted = new Set(Array.isArray(saved.drafted) ? saved.drafted.filter(id => byId[id]) : []);
+      targeted = new Set(Array.isArray(saved.targeted) ? saved.targeted.filter(id => byId[id]) : []);
       return;
     }
-    // legacy format was a bare array (order only, no drafted set)
+    // legacy format was a bare array (order only, no drafted/targeted sets)
     if(Array.isArray(saved) && saved.length === DATA.length && saved.every(id => byId[id])){
       order = saved;
       drafted = new Set();
+      targeted = new Set();
     }
   } catch(e){
     // no saved state, or it didn't parse — start from consensus order
@@ -734,11 +805,12 @@ function updateRoundPillOnScroll(){
 }
 
 function buildCSV(){
-  let csv = 'My Rank,Player,Team,Position,Bye,Consensus Rank,Salary Cap $,Status\n';
+  let csv = 'My Rank,Player,Team,Position,Bye,Consensus Rank,Salary Cap $,Status,Targeted\n';
   order.forEach((id, idx) => {
     const p = byId[id];
     const status = drafted.has(id) ? 'Drafted' : 'Available';
-    csv += `${idx+1},"${p.name}",${p.team},${p.pos},${p.bye},${p.rank},${p.price},${status}\n`;
+    const isTargeted = targeted.has(id) ? 'Yes' : 'No';
+    csv += `${idx+1},"${p.name}",${p.team},${p.pos},${p.bye},${p.rank},${p.price},${status},${isTargeted}\n`;
   });
   return csv;
 }
@@ -906,24 +978,29 @@ function processImportedText(text, sourceLabel){
     if(lines.length < 2) throw { detail: 'that text is empty' };
 
     const headerCells = parseCSVLine(lines[0]).map(h => h.trim().toLowerCase());
+    // Only the first 8 columns are required — "Targeted" is a newer,
+    // optional 9th column, so older exports without it still import fine.
     const headerMatches = EXPECTED_HEADER.every((h, i) => headerCells[i] === h);
     if(!headerMatches){
       throw { detail: `expected columns "${EXPECTED_HEADER.join(', ')}" but found "${headerCells.join(', ')}"` };
     }
+    const hasTargetedCol = headerCells[8] === 'targeted';
 
     const rows = lines.slice(1).map(parseCSVLine);
-    // rows: [My Rank, Player, Team, Position, Bye, Consensus Rank, Salary Cap $, Status]
+    // rows: [My Rank, Player, Team, Position, Bye, Consensus Rank, Salary Cap $, Status, Targeted?]
     const parsed = rows.map(r => ({
       myRank: parseInt(r[0], 10),
       name: (r[1] || '').trim(),
       team: (r[2] || '').trim(),
-      status: (r[7] || '').trim()
+      status: (r[7] || '').trim(),
+      isTargeted: hasTargetedCol && (r[8] || '').trim().toLowerCase() === 'yes'
     })).filter(r => r.name && r.team);
 
     parsed.sort((a, b) => a.myRank - b.myRank);
 
     const newOrder = [];
     const newDrafted = new Set();
+    const newTargeted = new Set();
     const unmatched = [];
 
     parsed.forEach(r => {
@@ -931,6 +1008,7 @@ function processImportedText(text, sourceLabel){
       if(id && byId[id] && !newOrder.includes(id)){
         newOrder.push(id);
         if(r.status.toLowerCase() === 'drafted') newDrafted.add(id);
+        if(r.isTargeted) newTargeted.add(id);
       } else if(!id){
         unmatched.push(r.name);
       }
@@ -954,6 +1032,7 @@ function processImportedText(text, sourceLabel){
 
     order = newOrder;
     drafted = newDrafted;
+    targeted = newTargeted;
     render();
     scheduleSave(true);
 
@@ -1011,6 +1090,15 @@ document.getElementById('clearDraftedBtn').addEventListener('click', () => {
   }
 });
 
+document.getElementById('clearTargetedBtn').addEventListener('click', () => {
+  if(targeted.size === 0) return;
+  if(confirm(`Remove the star from all ${targeted.size} targeted player(s)?`)){
+    targeted = new Set();
+    scheduleSave(true);
+    render();
+  }
+});
+
 document.getElementById('exportBtn').addEventListener('click', exportCSV);
 
 document.getElementById('importBtn').addEventListener('click', () => {
@@ -1049,6 +1137,18 @@ document.getElementById('main').addEventListener('change', (e) => {
   const input = e.target.closest('input[type="checkbox"][data-id]');
   if(!input) return;
   toggleDrafted(input.dataset.id);
+});
+
+document.getElementById('main').addEventListener('click', (e) => {
+  const btn = e.target.closest('.star-btn[data-star-id]');
+  if(!btn) return;
+  toggleTargeted(btn.dataset.starId);
+});
+
+document.getElementById('starOnlyBtn').addEventListener('click', () => {
+  starOnly = !starOnly;
+  document.getElementById('starOnlyBtn').classList.toggle('active', starOnly);
+  render();
 });
 
 (function init(){
